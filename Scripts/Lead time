@@ -1,0 +1,128 @@
+(function executeRule(current, previous /*null when async*/) {
+	
+	var plannedStartDateTime = current.start_date;
+	var leadTime='';
+	
+	if(current.risk==4){ // risk is low
+		leadTime = 1;
+		var inSchedule = checkSchedule(plannedStartDateTime, leadTime);
+		if(inSchedule){
+			gs.addErrorMessage('Your Change does not meet lead time requirements. Please reschedule, allowing for 1 business day advanced lead time. Please note, your implementation must be scheduled within the agreed maintenance window.');
+			current.setAbortAction(true);
+			current.state=previous.state;
+		}
+	}
+	else if(current.risk==1 || current.risk==2 || current.risk==3){//risk is moderate, high, very high
+		var cabDayCheck='';
+		var cabDateTime='';
+		if(current.cab_date){
+			cabDateTime = current.cab_date+" 00:00:00";
+			var date = new GlideDateTime(cabDateTime);
+			cabDayCheck = date.getDayOfWeek();
+			
+			gs.info('date :: '+date);
+			gs.info('date disp:: '+date.getDisplayValue());
+		}
+		//cab date is on Wednesday only		
+		if(cabDayCheck==3){  
+			//check if Cab date has passed
+			
+			var now = new GlideDateTime();
+			var date1 = new GlideDateTime();
+			var date2 = new GlideDateTime();
+			date1.setDisplayValueInternal(now);
+			date2.setDisplayValueInternal(cabDateTime);
+			var diffSeconds = gs.dateDiff(date1.getDisplayValue(), date2.getDisplayValue(), true);
+			
+// 			gs.info('date1 :: '+date1);
+// 			gs.info('date2 :: '+date2);			
+// 			gs.info('date1 disp:: '+date1.getDisplayValue());
+// 			gs.info('date2 disp:: '+date2.getDisplayValue());
+						
+			//check if Cab date falls in the same week and in current schedule as the same date when change moves to Assess
+			var cabWeek = getWeekOfYear(cabDateTime);
+			var nowWeek = getWeekOfYear(now);
+			var nowLeadTimeCheck = checkSchedule(now, leadTime);
+			var cabLeadTimeCheck = checkSchedule(cabDateTime, leadTime);
+			
+			// New condition
+			
+			var dt1 = new GlideDateTime(cabDateTime);
+			var dt2 = dt1;
+// 			gs.info('Dibyendu Lead time now ' + now.toString());
+// 			gs.info('Dibyendu Lead time dt1 ' + dt1.toString());
+			dt2.addDays(-5);
+// 			gs.info('Dibyendu Lead time dt2 ' + dt2);
+			var dateArr = dt2.toString().split(' ');
+			var datePart = dateArr[0];
+			var actualDate = datePart + ' 04:00:00'; // Singapore is 8 hr aheard of GMT
+			var cutoff = new GlideDateTime(actualDate);
+// 			gs.info('Dibyendu Lead time actualDate ' + actualDate);
+// 			gs.info('Dibyendu Lead time actDate ' + cutoff);
+// 			gs.info('Dibyendu Lead time compare ' + now.compareTo(cutoff));
+			//
+			
+			if((cabWeek == nowWeek) && cabLeadTimeCheck && nowLeadTimeCheck || now > cutoff){
+				gs.addErrorMessage("You have missed the cut-off submission for this week CAB i.e. before Friday 12PM. Please select the following week CAB Date.");
+				current.setAbortAction(true);
+				current.state=previous.state;
+			}
+				
+			if(diffSeconds < 0){
+				gs.addErrorMessage("The Cab Date for the Change has passed. Please select a CAB for the upcoming week.");
+				current.setAbortAction(true);
+				current.state=previous.state;
+			}
+			
+		}
+		else{
+			gs.addErrorMessage('The CAB Date should only be on Wednesdays. Please set the CAB date accordingly to proceed');
+			current.setAbortAction(true);
+			current.state=previous.state;
+		}
+	}
+	
+	
+	//------------------------------------------------------------------------------------------------------------------------------------------//
+	//get the week of the year
+	function getWeekOfYear(date){
+		var gdt = new GlideDateTime(date);
+		var week = gdt.getWeekOfYearLocalTime();
+		return week;
+	}
+	
+	//check if the dates are in schedule
+	function checkSchedule(date, leadTime){
+		var myUserObject = gs.getUser();
+		var schedRec = new GlideRecord('cmn_schedule');
+		if(leadTime==''){
+			schedRec.get('name', 'Tuesday 6PM t0 Friday Midnight excluding Saturdays, Sundays and Singapore PH');
+			var sched = new GlideSchedule(schedRec.sys_id);
+			var currentDateTime = new GlideDateTime(date);
+			if(sched.isInSchedule(currentDateTime,myUserObject.getTZ())){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else if(leadTime!=''){
+			var dc = new DurationCalculator();
+			schedRec.addQuery("name", "Monday to Friday 24*5 excluding Saturdays, Sundays and Singapore PH");
+			schedRec.query();
+			if (schedRec.next()) {
+				dc.setSchedule(schedRec.getUniqueValue(),myUserObject.getTZ());
+			}
+			var start = '';
+			var end = '';
+			
+			end = new GlideDateTime(date);
+			start = new GlideDateTime();
+			var focusDurationhrs = dc.calcScheduleDuration(start,end)/3600 ;
+			if(focusDurationhrs < leadTime*24)	{
+				return true;
+			}
+		}
+	}
+	
+})(current, previous);
