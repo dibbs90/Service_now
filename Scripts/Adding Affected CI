@@ -1,0 +1,43 @@
+(function executeRule(current, previous /*null when async*/) {
+	
+	var list_affected_ci = [];
+	var arrayUtil = new ArrayUtil();
+	var cr = new GlideRecord("cmdb_rel_ci");
+	cr.addQuery('child',current.cmdb_ci);
+	cr.query();
+	while(cr.next())
+		{
+		gs.info('parent item :: '+cr.parent);
+		gs.log('Dibyendu Adding affected CI 1st stage');
+		var affected_ci = new GlideRecord('task_ci');
+		affected_ci.addQuery('task', current.sys_id);
+		affected_ci.query();
+		while(affected_ci.next()){
+			list_affected_ci.push(affected_ci.ci_item.toString());
+			
+			if(!arrayUtil.contains(list_affected_ci, affected_ci.parent.toString())){
+			if(cr.parent.sys_class_name == 'cmdb_ci_business_app')
+				{
+				affected_ci.initialize();
+				affected_ci.setValue('ci_item',cr.parent);
+				affected_ci.setValue('task',current.sys_id);
+				affected_ci.insert();
+				gs.log('Dibyendu Adding affected CI: in while ' + list_affected_ci + 'Parent: '+ cr.parent.toString);
+		}
+			gs.log('Dibyendu Adding affected CI: ' + list_affected_ci + 'Parent: '+ cr.parent.toString() );
+// 		if(!arrayUtil.contains(list_affected_ci, cr.parent.toString())){
+// 			gs.log('Dibyendu Adding affected CI 2nd stage');
+// 			if(cr.parent.sys_class_name == 'cmdb_ci_business_app')
+// 				{
+// 				affected_ci.initialize();
+// 				affected_ci.setValue('ci_item',cr.parent);
+// 				affected_ci.setValue('task',current.sys_id);
+// 				affected_ci.insert();
+// 				gs.log('Dibyendu Adding affected CI Parent 3rd level: ' + cr.parent);
+// 			}
+			}
+		}
+		
+		}
+	
+})(current, previous);
