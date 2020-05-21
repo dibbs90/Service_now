@@ -1,0 +1,82 @@
+Start Date:
+
+function onChange(control, oldValue, newValue, isLoading) {
+	if (isLoading || newValue === '') {
+		return;
+	}
+	
+	var vad = new GlideAjax('Cat_Date_Validation');
+	vad.addParam('sysparm_name', 'validateStartDate');
+	vad.addParam('sysparm_newValue', newValue);
+	vad.getXMLAnswer(function(response){
+		if(response == 'false'){
+			
+			g_form.clearValue('planned_start_date');
+			g_form.showFieldMsg('planned_start_date', 'Please select current or future dates', 'error', true);
+		}
+	});
+
+}
+
+---------------------------------------------------------------------------------------------------------
+End Date:
+
+function onChange(control, oldValue, newValue, isLoading) {
+  if (isLoading || newValue === '') {
+  return;
+  }
+	
+	var startDate = g_form.getValue('planned_start_date');
+	
+	var vad = new GlideAjax('Cat_Date_Validation');
+	vad.addParam('sysparm_name', 'validateEndDate');
+	vad.addParam('sysparm_newValue', newValue);
+	vad.addParam('sysparm_startDate', startDate);
+	vad.getXMLAnswer(function(response){
+		if(response == 'false'){
+			
+			g_form.clearValue('planned_end_date');
+			g_form.showFieldMsg('planned_end_date', 'Planned end date should be after start date', 'error', true);
+		}
+	});
+
+}
+----------------------------------------------------------------------------------------------------------
+Script Include:
+
+var Cat_Date_Validation = Class.create();
+Cat_Date_Validation.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+	validateStartDate: function(){
+		var start = this.getParameter('sysparm_newValue');		
+		var dateFormat = 'yyyy-MM-dd HH:mm:ss';
+		
+		var startDateTime = new GlideDateTime();
+		startDateTime.setDisplayValue(start,dateFormat);
+		var now = gs.nowDateTime();
+		var nowDate = new GlideDateTime();
+		nowDate.setDisplayValue(now, dateFormat);
+		
+		if(startDateTime.compareTo(nowDate) == -1){
+			return false;
+		}else{
+			return true;
+		}
+
+	},
+
+	validateEndDate: function(){
+
+		var end = new GlideDateTime(this.getParameter('sysparm_newValue'));
+		var start = new GlideDateTime(this.getParameter('sysparm_startDate'));
+
+		if(end.compareTo(start) == -1){
+			return false;
+		}else{
+			return true;
+		}
+
+	},
+
+	type: 'Cat_Date_Validation'
+});
