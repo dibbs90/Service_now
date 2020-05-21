@@ -1,0 +1,37 @@
+(function executeRule(current, previous /*null when async*/) {
+	try{
+	var chg_request = new GlideRecord('change_request');
+	chg_request.addQuery('sys_id', current.sysapproval);
+	chg_request.addQuery('type','IN','normal,emergency');
+	chg_request.query();
+	if(chg_request.next()){
+		
+		gs.log('1st line Praveen change entering condition' + chg_request.number + ' Current state ' + chg_request.state.getDisplayValue() + ' Current Appr ' + current.sysapproval.getDisplayValue());// checking log
+		
+		if(chg_request.type == 'normal' && chg_request.state == -5)
+		{
+			gs.log("Praveen change type is Nm : " + chg_request.type + chg_request.state);// checking log
+			gs.eventQueue('change.approval.assess', current, chg_request.sys_id,null);
+		}		
+		else if(chg_request.type == 'normal' && chg_request.state == -4 && chg_request.risk == 4)
+		{
+			gs.log("Praveen change type is Nm : "+chg_request.type + chg_request.risk + chg_request.state);// checking log
+			gs.eventQueue('change.approval.authorize.low', current, chg_request.sys_id,null);
+		}
+		else if(chg_request.type == 'normal' && chg_request.state == -4 && (chg_request.risk == 1 || chg_request.risk == 2 ||chg_request.risk == 3))
+		{
+			gs.log("Praveen change type is Nm : "+chg_request.type + chg_request.risk + chg_request.state);// checking log
+			gs.eventQueue('change.approval.authorize.notLow', current, chg_request.sys_id,null);
+		}
+		else if(chg_request.type == 'emergency')
+		{
+			gs.log("Praveen change type is Em : " + chg_request.type);// checking log
+			gs.eventQueue('change.approval.authorize.emergency', current, chg_request.sys_id,null);
+		}
+	}
+	} // try ends
+	catch(ex){
+		gs.log("exception occured : "+ex, "rads");
+	}
+})(current, previous);
+
