@@ -1,0 +1,37 @@
+function validnew(){
+	var worknotes = g_form.getValue("work_notes");
+	if(worknotes == ""){
+		alert("Please provide the work notes");
+		g_form.setMandatory("work_notes",true);
+	}else{
+		gsftSubmit(null, g_form.getFormElement(), 'reset_to_new'); 
+	}
+}
+
+
+if (typeof window == 'undefined')
+	setNewState();
+
+function setNewState(){
+	
+	var workflowValue = gs.getProperty("change_request.properties");
+	var workflows = JSON.parse(workflowValue);
+	workflows = workflows["workflow"];
+	
+	var workflow = new Workflow();
+	var flows = workflow.getRunningFlows(current);
+	while(flows.next()){
+		//Check for associated workflows by name
+		var workflowName = flows.workflow_version.getDisplayValue();
+		if(workflowName == workflows[current.type]){
+			//Cancel the workflow context
+			new Workflow().cancelContext(flows);
+		}
+	}
+
+	current.state = -5;
+	current.update();
+	 new WorkflowApprovalUtils().cancelAll(current, 'update');
+	 workflow.startFlow(workflow.getWorkflowFromName(workflows[current.type]), current, 'update');
+	action.setRedirectURL(current);
+}
