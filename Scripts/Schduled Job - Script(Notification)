@@ -1,0 +1,9 @@
+//var qry="valid_toRELATIVEEE@dayofweek@ahead@"+gs.getProperty('usb.expiry.ten');
+var gr = new GlideRecord("cmdb_ci_computer");
+gr.addEncodedQuery('u_usb_exemption_until!=NULL^assigned_to!=NULL');
+gr.addQuery('u_usb_exemption_until','=',gs.daysAgo(-20));
+gr.query();
+while(gr.next()) {
+	gs.eventQueue('usb.excemption.expiry',gr,gr.getValue('sys_id'),gs.getProperty('usb.expiry.ten'));
+	gs.log('Dibyendu: Inside time window '+gr.name+' '+gr.u_usb_exemption_until);
+	}
