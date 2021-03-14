@@ -1,0 +1,6 @@
+use ui policy, easy and faster
+
+
+in the script section
+g_form.clearValue('until_date');
+g_form.showFieldMsg('until_date', 'Please Enter date within 12 Months from Today', 'error');
