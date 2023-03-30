@@ -1,0 +1,25 @@
+(function execute(inputs, outputs) {
+
+  var wo = inputs.work_order;
+  var gr = new GlideRecord('u_av_intake_events');
+  gr.addQuery('wo_sys_id', wo.sys_id);
+  gr.query();
+  var events = [];
+  while (gr.next()) {
+    var event = {};
+    event.start = new GlideDateTime(gr.start_value.toString()).getDisplayValueInternal();
+    event.end = new GlideDateTime(gr.end_value.toString()).getDisplayValueInternal();
+    event.prepared = new GlideDateTime(gr.prepared_value.toString()).getDisplayValueInternal();
+    event.hostedfrom = gr.hostedfrom_value.toString();
+    event.room = gr.room_value.toString();
+    event.nonmitlocation = gr.nonmitlocation_value.toString();
+    event.overflow = gr.overflow_value;
+    event.overflow_location = gr.overflowloc_value.toString();
+    events.push(event);
+  }
+  outputs.events = events;
+})(inputs, outputs);
+
+
+// add output varaible in array object
+events>event>db objects
