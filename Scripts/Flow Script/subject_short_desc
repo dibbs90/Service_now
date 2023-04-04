@@ -1,0 +1,8 @@
+var isCourse = fd_data.subflow_inputs.work_order.u_is_this_a_sloan_course;
+var courseNumber = fd_data.subflow_inputs.work_order.u_course_number.u_coursenumber;
+var eventName = fd_data.subflow_inputs.work_order.u_event_name;
+var workType = fd_data._6__create_task.record.work_type.name;
+
+var subject = isCourse ? ('Overflow Task - '+ workType + ': ' + courseNumber + ' - ' + eventName) : ('Overflow Task - '+ workType + ': ' + eventName);
+
+return subject;
