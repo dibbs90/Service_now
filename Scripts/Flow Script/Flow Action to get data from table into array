@@ -1,0 +1,22 @@
+(function execute(inputs, outputs) {
+
+  var wo = inputs.work_order;
+  var gr = new GlideRecord('u_av_recurring_event');
+  gr.addQuery('u_work_order.sys_id', wo.sys_id);
+  gr.query();
+  var events = [];
+  while (gr.next()) {
+    var event = {};
+    event.start = new GlideDateTime(gr.u_start.toString()).getDisplayValueInternal();
+    event.end = new GlideDateTime(gr.u_end.toString()).getDisplayValueInternal();
+    event.prepared = new GlideDateTime(gr.u_prepared_by.toString()).getDisplayValueInternal();
+    event.hostedfrom = gr.u_hosting_from.toString();
+    event.room = gr.u_room.toString();
+    event.nonmitlocation = gr.u_nonmitlocation.toString();
+    event.overflow = gr.u_overflow;
+    event.overflow_location = gr.u_overflow_room.toString();
+    event.session = gr.u_event_name.toString();
+    events.push(event);
+  }
+  outputs.events = events;
+})(inputs, outputs);
