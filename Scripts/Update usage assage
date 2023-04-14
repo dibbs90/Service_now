@@ -1,0 +1,70 @@
+(function executeRule(current, previous /*null when async*/ ) {
+
+
+	var microphoneModelCategory = ['3cefdeef1bc1a550595cc9d4604bcb11', 'eaff92ef1bc1a550595cc9d4604bcba6'];
+	var microphoneQty = [current.u_number_of_lapel_microphones, current.u_number_of_handheld_mics];
+	var flipChartsModelCategory = ['2130aa231b05a550595cc9d4604bcb4a', 'b547c12b1b4d6550595cc9d4604bcbd6'];
+	var flipChartQty = [current.u_number_of_easels, current.u_number_of_flipcharts];
+	var defaultQty = ['1'];
+	var assistiveModelCategory = ['d610eeef1bc1a550595cc9d4604bcbec'];
+	//var assistiveQty = [current.u_assistive_listening];
+	var maclaptopModelCategory = ['be4112a31bc1a550595cc9d4604bcb5f'];
+	//var maclaptopQty = [current.u_mac_laptop_loaner];
+	var windowlaptopModelCategory = ['66dd62231b45a550595cc9d4604bcb68'];
+	//var windowlaptopQty = [current.u_windows_laptop_loaner];
+
+	var taskSysId = [];
+	var tasks = new GlideRecord('wm_task');
+	tasks.addQuery('parent', current.sys_id);
+	tasks.addEncodedQuery('work_type=c425a36bdb05e150fe942d891396191b^ORwork_type=10d06354dbad2510fe942d8913961994');
+	tasks.query();
+	while (tasks.next()) {
+		taskSysId.push(tasks.getUniqueValue());
+
+	}
+
+	if (current.u_microphones == true) {
+		createAsset(taskSysId, microphoneModelCategory, microphoneQty);
+	}
+	if (current.u_flip_charts_easels == true) {
+		createAsset(taskSysId, flipChartsModelCategory, flipChartQty);
+	}
+	if (current.u_assistive_listening == true) {
+		createAsset(taskSysId, assistiveModelCategory, defaultQty);
+	}
+	if (current.u_mac_laptop_loaner == true) {
+		createAsset(taskSysId, maclaptopModelCategory, defaultQty);
+	}
+	if (current.u_windows_laptop_loaner == true) {
+		createAsset(taskSysId, windowlaptopModelCategory, defaultQty);
+	}
+
+
+	function createAsset(taskSysId, Assets, qty) {
+		for (var j = 0; j < taskSysId.length; j++) {
+			for (var z = 0; z < Assets.length; z++) {
+				var asst = new GlideRecord("sm_asset_usage");
+				asst.addQuery('u_work_order', current.sys_id);
+				asst.addQuery('service_order_task', taskSysId[j]);
+				asst.addQuery("u_model_categories", Assets[z]);
+				asst.query();
+				if (!asst.next()) {
+					asst.initialize();
+					asst.quantity = qty[z];
+					asst.u_work_order = current.sys_id;
+					asst.u_model_categories = Assets[z];
+					asst.service_order_task = taskSysId[j];
+					asst.status = 'not_used';
+					asst.insert();
+					gs.info(asst.number + " created by update asset from work order");
+
+				} else {
+					asst.quantity = qty[z];
+					asst.update();
+				}
+			}
+		}
+	}
+
+
+})(current, previous);
